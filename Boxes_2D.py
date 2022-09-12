@@ -6,6 +6,7 @@ print('Boxes_2D Starting')
 class Box:
     def __init__(self, size, SPAWN_LOCATION, color):
         # Set Variables
+        # test
         self.COLOR = color
         self.SPEED_INCREASE_RATE = 5
         self.SPEED_DECREASE_RATE = 2

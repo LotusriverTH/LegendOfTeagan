@@ -74,7 +74,7 @@ class PGConfig:
                     exit()
 
             if event.type == pygame.MOUSEBUTTONDOWN:
-                    self.__Boxes_2D_box_list.append(Boxes_2D.Box((50, 50), pygame.mouse.get_pos(), 'orange'))
+                    self.__Boxes_2D_box_list.append(Boxes_2D.Box((50, 50), pygame.mouse.get_pos(), 'green'))
 
         pygame.display.update()
         self.__clock.tick(self.__framerate)
