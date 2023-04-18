@@ -13,6 +13,7 @@ class Box:
         self.SPEED_CAP = 20
         self.__SPAWN_LOCATION = SPAWN_LOCATION
         self.PUSH_DISTANCE = 5
+        self.DeleteFlag = False
 
         # Dynamic variables
         self.speed = [0, 0]
@@ -95,10 +96,9 @@ class Box:
         self.collider_left_rect.midleft = self.rect.midleft
         self.collider_right_rect.midright = self.rect.midright
 
-
-
-
-
+    def setDeleteFlag(self, do):
+        if do:
+            self.DeleteFlag = True
 
 
 print('Boxes_2D Complete')

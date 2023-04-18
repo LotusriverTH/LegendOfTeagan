@@ -1,28 +1,43 @@
+import bufferables
 import pygame
+from math import cos, sin, pi
 
 print('Character_2D Starting')
 
 
 class Player:
-    def __init__(self, size):
+    def __init__(self, size): #, model):
+        self.__size = size
+        # self.__model = model
+
         # Set Variables
         self.COLOR = '#C60018'
-        self.SPEED_INCREASE_RATE = 8
-        self.SPEED_DECREASE_RATE = 4
+        self.SPEED_INCREASE_RATE = 2
+        self.SPEED_DECREASE_RATE = 1
         self.SPEED_CAP = 16
         self.PUSH_DISTANCE = 5
         self.EFFECTIVE_MAX_SPEED = self.SPEED_CAP - self.SPEED_DECREASE_RATE
 
+        self.attack_range = round(self.__size[0] * .8)
+        self.attack_thickness = round(self.__size[0] * .8)
+
         # Dynamic variables
         self.speed = [0, 0]
-        self.__size = size
+        self.degrees = 0
+        self.attack_direction = [0, 0]
+
 
         # Lists
         self.COLLIDER_RECT_LIST = []
 
         # player outline object, edges define where the collider objects will go
-        self.surf = pygame.Surface((self.__size[0], self.__size[1]))
-        self.surf.fill(self.COLOR)
+        # self.surf = pygame.Surface((self.__size[0], self.__size[1]))
+        self.png = pygame.image.load('graphics/Teak/Push_1.png').convert_alpha()
+        # self.png = pygame.image.load('graphics/Legacygraphics/custom/shell2.png').convert_alpha()
+        # self.gif = pygame.image.load('graphics/Helicopter/Helicopter.gif').convert_alpha()
+        self.surf_default = pygame.transform.scale(self.png, (self.__size[0], self.__size[1]))
+        self.surf = self.surf_default
+        # self.surf.fill(self.COLOR)
         self.rect = self.surf.get_rect(center=(200, 200))
 
         # define collider sizes
@@ -60,33 +75,66 @@ class Player:
             left = keys[pygame.K_a]
             right = keys[pygame.K_d]
 
-        if controls == 'ARROW':
+        elif controls == 'ARROW':
             up = keys[pygame.K_UP]
             down = keys[pygame.K_DOWN]
             left = keys[pygame.K_LEFT]
             right = keys[pygame.K_RIGHT]
 
+        else:
+            up = False
+            down = False
+            left = False
+            right = False
 
         # Left movement
         if left:
+            self.surf = pygame.transform.rotate(self.surf_default, 90)
+            self.degrees = 90
+
             self.speed[0] -= self.SPEED_INCREASE_RATE
             if self.speed[0] < -self.SPEED_CAP:
                 self.speed[0] = -self.SPEED_CAP
         # Right movement
         if right:
+            self.surf = pygame.transform.rotate(self.surf_default, 270)
+            self.degrees = 270
+
             self.speed[0] += self.SPEED_INCREASE_RATE
             if self.speed[0] > self.SPEED_CAP:
                 self.speed[0] = self.SPEED_CAP
         # Up movement
         if up:
+            self.surf = self.surf_default
+            self.degrees = 0
+
             self.speed[1] -= self.SPEED_INCREASE_RATE
             if self.speed[1] < -self.SPEED_CAP:
                 self.speed[1] = -self.SPEED_CAP
         # Down movement
         if down:
+            self.surf = pygame.transform.rotate(self.surf_default, 180)
+            self.degrees = 180
+
             self.speed[1] += self.SPEED_INCREASE_RATE
             if self.speed[1] > self.SPEED_CAP:
                 self.speed[1] = self.SPEED_CAP
+
+        if up and right:
+            self.surf = pygame.transform.rotate(self.surf_default, 315)
+            self.degrees = 315
+
+        elif up and left:
+            self.surf = pygame.transform.rotate(self.surf_default, 45)
+            self.degrees = 45
+
+        elif down and right:
+            self.surf = pygame.transform.rotate(self.surf_default, 225)
+            self.degrees = 225
+
+        elif down and left:
+            self.surf = pygame.transform.rotate(self.surf_default, 135)
+            self.degrees = 135
 
         # x axis speed decrease
         if self.speed[0] < 0:
@@ -120,14 +168,19 @@ class Player:
             self.speed[0] = round(self.speed[0] / 1.5)
             self.speed[1] = round(self.speed[1] / 1.5)
 
-
         # Apply the calculated movement
         self.rect.x += self.speed[0]
         self.rect.y += self.speed[1]
 
+        if self.speed[0] or self.speed[1] != 0:
+            self.attack_direction = [
+                round(cos(self.degrees * pi / 180) * self.attack_range),
+                round(sin(self.degrees * pi / 180) * self.attack_range)
+            ]
+            # print("Attack Direction: ", self.attack_direction)
+
         # Place colliders in the proper place on player after they move
         self._moveColliders()
-
 
     def movementMOUSE(self):
         mouse_pos = pygame.mouse.get_pos()
@@ -166,6 +219,22 @@ class Player:
                     self.rect.right = rect.left
                     self.speed[0] = 0
                     self._push(rect, (self.PUSH_DISTANCE, 0))
+
+    def punch(self, configBufferList):
+        x_surf = pygame.Surface((self.attack_range, self.attack_thickness))
+        x_rect = x_surf.get_rect(center=[self.rect.centerx - self.attack_direction[1], self.rect.centery - self.attack_direction[0]])
+
+        configBufferList.append(bufferables.animation([x_rect.centerx, x_rect.centery], self.attack_direction, "punch"))
+
+
+    def laser(self, configBufferList):
+        x_surf = pygame.Surface((self.attack_range, self.attack_thickness))
+        x_rect = x_surf.get_rect(center=[self.rect.centerx - self.attack_direction[1], self.rect.centery - self.attack_direction[0]])
+
+        configBufferList.append(bufferables.animation([x_rect.centerx, x_rect.centery], self.attack_direction, "laser"))
+
+
+
 
     def _push(self, rect, push_coord):
         rect.x += push_coord[0]
