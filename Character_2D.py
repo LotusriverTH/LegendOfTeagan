@@ -220,6 +220,15 @@ class Player:
                     self.speed[0] = 0
                     self._push(rect, (self.PUSH_DISTANCE, 0))
 
+    def _push(self, rect, push_coord):
+        rect.x += push_coord[0]
+        rect.y += push_coord[1]
+        self.rect.x += push_coord[0]
+        self.rect.y += push_coord[1]
+
+        self._moveColliders()
+        #something is messed up here
+
     def punch(self, configBufferList):
         x_surf = pygame.Surface((self.attack_range, self.attack_thickness))
         x_rect = x_surf.get_rect(center=[self.rect.centerx - self.attack_direction[1], self.rect.centery - self.attack_direction[0]])
@@ -233,12 +242,6 @@ class Player:
 
         configBufferList.append(bufferables.animation([x_rect.centerx, x_rect.centery], self.attack_direction, "laser"))
 
-
-
-
-    def _push(self, rect, push_coord):
-        rect.x += push_coord[0]
-        rect.y += push_coord[1]
 
     def _moveColliders(self):
         self.collider_top_rect.midtop = self.rect.midtop

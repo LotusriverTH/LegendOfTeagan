@@ -68,6 +68,9 @@ class PGConfig:
     def main(self):
         # Render background, wipes screen clean each frame
         pygame.draw.rect(self.__screen, 'DarkBlue', (0, 0, self.__screen_rect.width, self.__screen_rect.height))
+        Box_count_surf = pygame.font.Font(None, 50).render(f'Boxes: {len(self.__Boxes_2D_box_list)}', False, colors[0])
+        Box_count_rect = Box_count_surf.get_rect(topleft = self.__screen_rect.topleft)
+        self.__screen.blit(Box_count_surf, Box_count_rect)
 
         # bufferables loop
         for bufferObject in self.bufferlist:
@@ -122,7 +125,7 @@ class PGConfig:
                     collision = True
 
                 if not collision:
-                    if len(self.__Boxes_2D_box_list)<15:
+                    if len(self.__Boxes_2D_box_list)<10:
                         self.__Boxes_2D_box_list.append(testBox)
 
 

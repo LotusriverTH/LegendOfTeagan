@@ -1,6 +1,6 @@
 import pygame
 
-print('Boxes_2D Starting')
+print('Boxes_2D Starting Legend of Teagan version')
 
 
 class Box:
@@ -89,6 +89,11 @@ class Box:
     def _push(self, rect, push_coord):
         rect.x += push_coord[0]
         rect.y += push_coord[1]
+        self.rect.x += push_coord[0]
+        self.rect.y += push_coord[1]
+
+        self._moveColliders()
+
 
     def _moveColliders(self):
         self.collider_top_rect.midtop = self.rect.midtop
