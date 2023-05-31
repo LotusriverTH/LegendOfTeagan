@@ -12,15 +12,9 @@ multiple weapons with unique frames, using weapon framework [x]
 ( These all feel a tad lofty, but if there are any "X"s in those boxes then know I tried!)
 '''
 
-## BERTO! The controls are:
-#       WASD --
-#       Space -- (Press to 'punch', hold to fire 'lasers')
-#       E -- populate screen with more squares
-#       Any mouse button -- place square at pointer location
-
-# LMK if you have any questions, I kind of struggle to modify this sometimes but I understand it pretty well
-
+import gc
 import random
+# import timeit
 from sys import exit
 
 import bufferables
@@ -37,7 +31,7 @@ colors = [
 '#cdaa50','#fdc57a','#eddcaf'
 ]
 
-
+# print(dir(gc))
 
 class PGConfig:
     def __init__(self, screenxy, framerate):
@@ -58,19 +52,21 @@ class PGConfig:
         self.__screen = pygame.display.set_mode(self.__screenxy)
         self.__screen_rect = self.__screen.get_rect()
 
-        self.__player = Character_2D.Player((100, 100))# , True)  # load in separate character controller
+        self.__player = Character_2D.Player((110, 110))# , True)  # load in separate character controller
         self.__Boxes_2D_box_list = []
 
         self.spawnCounter = 1000
-
 
         # loop
     def main(self):
         # Render background, wipes screen clean each frame
         pygame.draw.rect(self.__screen, 'DarkBlue', (0, 0, self.__screen_rect.width, self.__screen_rect.height))
-        Box_count_surf = pygame.font.Font(None, 50).render(f'Boxes: {len(self.__Boxes_2D_box_list)}', False, colors[0])
-        Box_count_rect = Box_count_surf.get_rect(topleft = self.__screen_rect.topleft)
-        self.__screen.blit(Box_count_surf, Box_count_rect)
+
+        ## debug text on screen
+        # Box_count_surf = pygame.font.Font(None, 50).render(f'Boxes: {len(self.__Boxes_2D_box_list)}', False, colors[0])
+        # Box_count_rect = Box_count_surf.get_rect(topleft = self.__screen_rect.topleft)
+        # self.__screen.blit(Box_count_surf, Box_count_rect)
+        ##
 
         # bufferables loop
         for bufferObject in self.bufferlist:
@@ -82,10 +78,15 @@ class PGConfig:
 
             if bufferObject.DeleteFlag:
                 self.bufferlist.remove(bufferObject)
+                del bufferObject
 
 
         # character 2D things
         self.__screen.blit(self.__player.surf, self.__player.rect)
+        # debug 3 lines visualize colliders
+        for collider_rect in self.__player.COLLIDER_RECT_LIST:
+            collider_surf = pygame.Surface((collider_rect.w, collider_rect.h))
+            self.__screen.blit(collider_surf, collider_rect)
         self.__player.movement('WASD')
         for box in self.__Boxes_2D_box_list:
             x = box.rect
@@ -95,22 +96,43 @@ class PGConfig:
 
         # Box 2D things
         for box in self.__Boxes_2D_box_list:
+            ## box removal protocol
             if box.DeleteFlag:
-                self.bufferlist.append(bufferables.animation([box.rect.centerx, box.rect.centery], [0, 0], "quadDestruction", (box.surf, box.rect)))
-                # self.bufferlist.append(bufferables.animation([box.rect.centerx, box.rect.centery], [0, 0], "cloneFall", (box.surf, box.rect)))
-                self.__Boxes_2D_box_list.remove(box)
+                ## randomly pick a death animation
+                # death_anim = []
+                # death_anim.append(bufferables.animation([box.rect.centerx, box.rect.centery], [0, 0], "quadDestruction", (box.surf, box.rect)))
+                # death_anim.append(bufferables.animation([box.rect.centerx, box.rect.centery], [0, 0], "cloneFall", (box.surf, box.rect)))
+                # self.bufferlist.append(random.choice(death_anim))
 
-            for boxclone in self.__Boxes_2D_box_list:
-                box.collision(boxclone.rect)
+                ## quad destruction death animation
+                self.bufferlist.append(bufferables.animation([box.rect.centerx, box.rect.centery], [0, 0], "quadDestruction", (box.surf, box.rect)))
+
+                ## clone fall animation
+                # self.bufferlist.append(bufferables.animation([box.rect.centerx, box.rect.centery], [0, 0], "cloneFall", (box.surf, box.rect)))
+
+                ## deletion of box, effects are now in the buffer list and object with colliders is gone.
+                self.__Boxes_2D_box_list.remove(box)
+                del box
+                # print(self.__Boxes_2D_box_list)
+                continue
+
+            for otherBox in self.__Boxes_2D_box_list:
+                box.collision(otherBox.rect)
+
+
         for box in self.__Boxes_2D_box_list:
             self.__screen.blit(box.surf, box.rect)
 
+            #debug 3 lines visualize colliders
+            for collider_rect in box.COLLIDER_RECT_LIST:
+                collider_surf = pygame.Surface((collider_rect.w, collider_rect.h))
+                self.__screen.blit(collider_surf, collider_rect)
+
         # Logic
         # print("tick " + str(pygame.time.get_ticks()))
-
-
         if pygame.time.get_ticks() > self.spawnCounter:
-            self.spawnCounter+= 1000
+            self.spawnCounter += 1000
+
             for i in range(20):
                 collision = False
                 testBox = Boxes_2D.Box((50, 50),
@@ -125,7 +147,7 @@ class PGConfig:
                     collision = True
 
                 if not collision:
-                    if len(self.__Boxes_2D_box_list)<10:
+                    if len(self.__Boxes_2D_box_list)<0:
                         self.__Boxes_2D_box_list.append(testBox)
 
 
@@ -136,6 +158,32 @@ class PGConfig:
         if keys[pygame.K_SPACE]:
             self.__player.laser(self.bufferlist)
 
+        ## spawn boxes by holding key
+        if keys[pygame.K_t]:
+            for i in range(2):
+                collision = False
+                # Bx = Box width
+                # By = Box height
+                # Bav is the average of Bx and By
+                Bx = random.randint(2, 2)
+                By = random.randint(2, 2)
+                Bav = (Bx + By) / 2
+
+                testBox = Boxes_2D.Box((Bx, By),
+                                       [round(random.randint(100, self.__screen_rect.right - 100) / Bav) * Bav,
+                                        round(random.randint(100, self.__screen_rect.bottom - 100) / Bav) * Bav],
+                                       random.choice(colors))
+
+                for box in self.__Boxes_2D_box_list:
+                    if testBox.rect.colliderect(box.rect):
+                        collision = True
+                if testBox.rect.colliderect(self.__player.rect):
+                    collision = True
+
+                if not collision:
+                    self.__Boxes_2D_box_list.append(testBox)
+
+
         # Considers all event types
         for event in pygame.event.get():
             # If a key is pressed
@@ -144,21 +192,33 @@ class PGConfig:
                 if event.key == pygame.K_ESCAPE:
                     pygame.display.quit()
                     pygame.quit()
+                    gc.collect()
                     exit()
 
                 if event.key == pygame.K_SPACE:
                     self.__player.punch(self.bufferlist)
 
-                # if event.key == pygame.K_q:
-                #     self.__player.laser(self.bufferlist)
+                if event.key == pygame.K_q:
+                    print(gc.DEBUG_UNCOLLECTABLE)
+                if event.key == pygame.K_x:
+                    gc.collect()
 
+
+                ## spawn boxes with each key press
                 if event.key == pygame.K_e:
 
                     for i in range(20):
                         collision = False
-                        testBox = Boxes_2D.Box((50, 50),
-                                                [round(random.randint(100, self.__screen_rect.right-100)/50)*50,
-                                                round(random.randint(100, self.__screen_rect.bottom-100)/50)*50], random.choice(colors))
+                        # Bx = Box width
+                        # By = Box height
+                        # Bav is the average of Bx and By
+                        Bx = random.randint(2, 200)
+                        By = random.randint(2, 200)
+                        Bav = (Bx + By) / 2
+
+                        testBox = Boxes_2D.Box((Bx, By),
+                                                [round(random.randint(100, self.__screen_rect.right-100)/Bav)*Bav,
+                                                round(random.randint(100, self.__screen_rect.bottom-100)/Bav)*Bav], random.choice(colors))
 
                         for box in self.__Boxes_2D_box_list:
                             if testBox.rect.colliderect(box.rect):
@@ -184,5 +244,23 @@ class PGConfig:
 if __name__ == '__main__':
     PrimaryObject = PGConfig((1280, 720), 60)
 
+    # lag_count = 0
+
     while True:
+
+        # toc = timeit.default_timer()
+        # try:
+        #     time = toc - tic  # elapsed time in seconds
+        # except:
+        #     time = 0
+        #
+        # # print(time)
+        # if time > .018:
+        #     lag_count += 1
+        #     print(f'late frames: {lag_count}\n{time}')
+        #
+        # tic = timeit.default_timer()
+
         PrimaryObject.main()
+
+

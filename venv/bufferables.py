@@ -44,7 +44,7 @@ class animation:
     def laser(self):
         if self.initFlag:
             self.frames = 150
-            self.dimensions = [50,50]
+            self.dimensions = [40,720]
             self.initFlag = False
             self.Damaging = True
 
@@ -72,11 +72,11 @@ class animation:
         if self.frames:
             # print('quadDestructioning')
             self.__cordinates_xy_list = self.__cloneSurfRect[1].center
-            retSurf = self.__cloneSurfRect[0]
+            retSurfRect = self.__cloneSurfRect
             self.frames -= 1
 
 
-            return retSurf
+            return retSurfRect
         if not self.frames:
             self.DeleteFlag = True
 
@@ -124,23 +124,31 @@ class animation:
 
             if self.frames:
                 self.ticker += 1
-                surf1 = self.quadDestruction()
-                surf1 = pygame.transform.scale(surf1, [25,25])
+                pre_surfRect = self.quadDestruction()
+                pre_surf1 = pre_surfRect[0]
+                pre_rect1 = pre_surfRect[1]
+                surf1 = pygame.transform.scale(pre_surf1, [pre_rect1.w/2, pre_rect1.h/2])
                 rect1 = surf1.get_rect(bottomright = self.__cordinates_xy_list)
 
 
-                surf2 = self.quadDestruction()
-                surf2 = pygame.transform.scale(surf2, [25,25])
+                pre_surfRect = self.quadDestruction()
+                pre_surf2 = pre_surfRect[0]
+                pre_rect2 = pre_surfRect[1]
+                surf2 = pygame.transform.scale(pre_surf2, [pre_rect2.w/2, pre_rect2.h/2])
                 rect2 = surf2.get_rect(bottomleft = self.__cordinates_xy_list)
 
 
-                surf3 = self.quadDestruction()
-                surf3 = pygame.transform.scale(surf3, [25,25])
+                pre_surfRect = self.quadDestruction()
+                pre_surf3 = pre_surfRect[0]
+                pre_rect3 = pre_surfRect[1]
+                surf3 = pygame.transform.scale(pre_surf3, [pre_rect3.w/2, pre_rect3.h/2])
                 rect3 = surf3.get_rect(topright = self.__cordinates_xy_list)
 
 
-                surf4 = self.quadDestruction()
-                surf4 = pygame.transform.scale(surf4, [25,25])
+                pre_surfRect = self.quadDestruction()
+                pre_surf4 = pre_surfRect[0]
+                pre_rect4 = pre_surfRect[1]
+                surf4 = pygame.transform.scale(pre_surf4, [pre_rect4.w/2, pre_rect4.h/2])
                 rect4 = surf4.get_rect(topleft = self.__cordinates_xy_list)
 
                 rect1.x-=self.ticker*3
@@ -152,14 +160,14 @@ class animation:
                 rect4.x+=self.ticker*3
                 rect4.y+=self.ticker*3
 
-                rect1.x-=-15
-                rect1.y-=-15
-                rect2.x+=-15
-                rect2.y-=-15
-                rect3.x-=-15
-                rect3.y+=-15
-                rect4.x+=-15
-                rect4.y+=-15
+                # rect1.x-=-40
+                # rect1.y-=-40
+                # rect2.x+=-40
+                # rect2.y-=-40
+                # rect3.x-=-40
+                # rect3.y+=-40
+                # rect4.x+=-40
+                # rect4.y+=-40
 
 
                 configScreen.blit(surf1, rect1)

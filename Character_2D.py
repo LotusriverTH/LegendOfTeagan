@@ -194,14 +194,14 @@ class Player:
             if self.collider_top_rect.bottom + 10 > rect.bottom:
                 if self.collider_top_rect.colliderect(rect):
                     self.rect.top = rect.bottom
-                    self.speed[1] = 0
+                    # self.speed[1] = 0
                     self._push(rect, (0, -self.PUSH_DISTANCE))
 
             # Bottom collision
             if self.collider_bottom_rect.top - 10 < rect.top:
                 if self.collider_bottom_rect.colliderect(rect):
                     self.rect.bottom = rect.top
-                    self.speed[1] = 0
+                    # self.speed[1] = 0
                     self._push(rect, (0, self.PUSH_DISTANCE))
 
 
@@ -209,7 +209,7 @@ class Player:
             if self.collider_left_rect.right + 10 > rect.right:
                 if self.collider_left_rect.colliderect(rect):
                     self.rect.left = rect.right
-                    self.speed[0] = 0
+                    # self.speed[0] = 0
                     self._push(rect, (-self.PUSH_DISTANCE, 0))
 
 
@@ -217,14 +217,14 @@ class Player:
             if self.collider_right_rect.left - 10 < rect.left:
                 if self.collider_right_rect.colliderect(rect):
                     self.rect.right = rect.left
-                    self.speed[0] = 0
+                    # self.speed[0] = 0
                     self._push(rect, (self.PUSH_DISTANCE, 0))
 
     def _push(self, rect, push_coord):
         rect.x += push_coord[0]
         rect.y += push_coord[1]
-        self.rect.x += push_coord[0]
-        self.rect.y += push_coord[1]
+        # self.rect.x += push_coord[0]
+        # self.rect.y += push_coord[1]
 
         self._moveColliders()
         #something is messed up here
