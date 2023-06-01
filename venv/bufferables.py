@@ -29,8 +29,8 @@ class animation:
             if not self.frames:
                 self.DeleteFlag = True
             # print("punching")
-            self.dimensions[0] += 10
-            self.dimensions[1] += 10
+            self.dimensions[0] = self.dimensions[0] + 10
+            self.dimensions[1] = self.dimensions[1] + 10
 
             self.__cordinates_xy_list[0] -= round(self.__direction_xy_list[1] / 10)
             self.__cordinates_xy_list[1] -= round(self.__direction_xy_list[0] / 10)
@@ -44,7 +44,7 @@ class animation:
     def laser(self):
         if self.initFlag:
             self.frames = 150
-            self.dimensions = [40,720]
+            self.dimensions = [40,40]
             self.initFlag = False
             self.Damaging = True
 
@@ -95,7 +95,7 @@ class animation:
                 self.DeleteFlag = True
 
             # print('cloneFalling')
-            self.__cordinates_xy_list[1] += 3
+            self.__cordinates_xy_list[1] = self.__cordinates_xy_list[1] + 3
             retSurf = self.__cloneSurfRect[0]
 
             return retSurf
@@ -123,7 +123,7 @@ class animation:
                 self.frames = True
 
             if self.frames:
-                self.ticker += 1
+                self.ticker = self.ticker + 1
                 pre_surfRect = self.quadDestruction()
                 pre_surf1 = pre_surfRect[0]
                 pre_rect1 = pre_surfRect[1]
@@ -153,22 +153,12 @@ class animation:
 
                 rect1.x-=self.ticker*3
                 rect1.y-=self.ticker*3
-                rect2.x+=self.ticker*3
+                rect2.x = rect2.x + self.ticker*3
                 rect2.y-=self.ticker*3
                 rect3.x-=self.ticker*3
-                rect3.y+=self.ticker*3
-                rect4.x+=self.ticker*3
-                rect4.y+=self.ticker*3
-
-                # rect1.x-=-40
-                # rect1.y-=-40
-                # rect2.x+=-40
-                # rect2.y-=-40
-                # rect3.x-=-40
-                # rect3.y+=-40
-                # rect4.x+=-40
-                # rect4.y+=-40
-
+                rect3.y = rect3.y + self.ticker*3
+                rect4.x = rect4.x + self.ticker*3
+                rect4.y = rect4.y + self.ticker*3
 
                 configScreen.blit(surf1, rect1)
                 configScreen.blit(surf2, rect2)

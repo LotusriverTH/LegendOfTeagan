@@ -47,6 +47,20 @@ class Box:
         self.collider_right_surf = pygame.Surface((collider_shortx, collider_longy))
         self.collider_right_rect = self.collider_right_surf.get_rect(midright=self.rect.midright)
 
+        # OLD VERSION OVERWRITE DEBUG`
+        self.collider_top_surf = pygame.Surface((collider_longx, collider_shortx))
+        self.collider_top_rect = self.collider_top_surf.get_rect(midtop=self.rect.midtop)
+
+        self.collider_bottom_surf = pygame.Surface((collider_longx, collider_shortx))
+        self.collider_bottom_rect = self.collider_bottom_surf.get_rect(midbottom=self.rect.midbottom)
+
+        self.collider_left_surf = pygame.Surface((collider_shorty, collider_longy))
+        self.collider_left_rect = self.collider_left_surf.get_rect(midleft=self.rect.midleft)
+
+        self.collider_right_surf = pygame.Surface((collider_shorty, collider_longy))
+        self.collider_right_rect = self.collider_right_surf.get_rect(midright=self.rect.midright)
+
+
         # add colliders' rects to collider_rect_list
         self.COLLIDER_RECT_LIST.append(self.collider_top_rect)
         self.COLLIDER_RECT_LIST.append(self.collider_bottom_rect)
@@ -87,13 +101,10 @@ class Box:
         self._moveColliders()
 
     def _push(self, rect, push_coord):
-        rect.x += push_coord[0]
-        rect.y += push_coord[1]
-        # self.rect.x += push_coord[0]
-        # self.rect.y += push_coord[1]
+        rect.x = rect.x + push_coord[0]
+        rect.y = rect.y + push_coord[1]
 
         self._moveColliders()
-
 
     def _moveColliders(self):
         self.collider_top_rect.midtop = self.rect.midtop

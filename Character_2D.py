@@ -6,15 +6,15 @@ print('Character_2D Starting')
 
 
 class Player:
-    def __init__(self, size): #, model):
+    def __init__(self, size): #, variant):
         self.__size = size
-        # self.__model = model
+        # self.__variant = variant
 
         # Set Variables
         self.COLOR = '#C60018'
         self.SPEED_INCREASE_RATE = 2
         self.SPEED_DECREASE_RATE = 1
-        self.SPEED_CAP = 16
+        self.SPEED_CAP = 4
         self.PUSH_DISTANCE = 5
         self.EFFECTIVE_MAX_SPEED = self.SPEED_CAP - self.SPEED_DECREASE_RATE
 
@@ -24,17 +24,18 @@ class Player:
         # Dynamic variables
         self.speed = [0, 0]
         self.degrees = 0
-        self.attack_direction = [0, 0]
+        self.attack_direction = [0, -40]
 
 
         # Lists
         self.COLLIDER_RECT_LIST = []
 
         # player outline object, edges define where the collider objects will go
-        # self.surf = pygame.Surface((self.__size[0], self.__size[1]))
+
         self.png = pygame.image.load('graphics/Teak/Push_1.png').convert_alpha()
         # self.png = pygame.image.load('graphics/Legacygraphics/custom/shell2.png').convert_alpha()
-        # self.gif = pygame.image.load('graphics/Helicopter/Helicopter.gif').convert_alpha()
+        # self.png = pygame.image.load('graphics/Helicopter/Helicopter.gif').convert_alpha()
+
         self.surf_default = pygame.transform.scale(self.png, (self.__size[0], self.__size[1]))
         self.surf = self.surf_default
         # self.surf.fill(self.COLOR)
@@ -67,20 +68,24 @@ class Player:
         self.COLLIDER_RECT_LIST.append(self.collider_right_rect)
 
     def movement(self, controls):
-        # gathers all pressed keys
+        # gathers all key presses
         keys = pygame.key.get_pressed()
+
+        # use wasd
         if controls == 'WASD':
             up = keys[pygame.K_w]
             down = keys[pygame.K_s]
             left = keys[pygame.K_a]
             right = keys[pygame.K_d]
 
+        # or use arrow keys
         elif controls == 'ARROW':
             up = keys[pygame.K_UP]
             down = keys[pygame.K_DOWN]
             left = keys[pygame.K_LEFT]
             right = keys[pygame.K_RIGHT]
 
+        # otherwise no input detection
         else:
             up = False
             down = False
@@ -100,7 +105,7 @@ class Player:
             self.surf = pygame.transform.rotate(self.surf_default, 270)
             self.degrees = 270
 
-            self.speed[0] += self.SPEED_INCREASE_RATE
+            self.speed[0] = self.speed[0] + self.SPEED_INCREASE_RATE
             if self.speed[0] > self.SPEED_CAP:
                 self.speed[0] = self.SPEED_CAP
         # Up movement
@@ -116,10 +121,11 @@ class Player:
             self.surf = pygame.transform.rotate(self.surf_default, 180)
             self.degrees = 180
 
-            self.speed[1] += self.SPEED_INCREASE_RATE
+            self.speed[1] = self.speed[1] + self.SPEED_INCREASE_RATE
             if self.speed[1] > self.SPEED_CAP:
                 self.speed[1] = self.SPEED_CAP
 
+        # diagonal input detection, doesn't impact speed just used to derive/store degrees
         if up and right:
             self.surf = pygame.transform.rotate(self.surf_default, 315)
             self.degrees = 315
@@ -136,9 +142,13 @@ class Player:
             self.surf = pygame.transform.rotate(self.surf_default, 135)
             self.degrees = 135
 
+        if up and down and left and right:
+            self.surf = self.surf_default
+            self.degrees = 0
+
         # x axis speed decrease
         if self.speed[0] < 0:
-            self.speed[0] += self.SPEED_DECREASE_RATE
+            self.speed[0] = self.speed[0] + self.SPEED_DECREASE_RATE
         if self.speed[0] > 0:
             self.speed[0] -= self.SPEED_DECREASE_RATE
         if -self.SPEED_DECREASE_RATE+1 <= self.speed[0] <= self.SPEED_DECREASE_RATE-1:
@@ -146,12 +156,13 @@ class Player:
 
         # y axis speed decrease
         if self.speed[1] < 0:
-            self.speed[1] += self.SPEED_DECREASE_RATE
+            self.speed[1] = self.speed[1] + self.SPEED_DECREASE_RATE
         if self.speed[1] > 0:
             self.speed[1] -= self.SPEED_DECREASE_RATE
         if -self.SPEED_DECREASE_RATE+1 <= self.speed[1] <= self.SPEED_DECREASE_RATE-1:
             self.speed[1] = 0
 
+        # diagonal speed limiter
         if self.speed[0]>6 and self.speed[1]>6:
             self.speed[0] = round(self.speed[0] / 1.5)
             self.speed[1] = round(self.speed[1] / 1.5)
@@ -169,18 +180,18 @@ class Player:
             self.speed[1] = round(self.speed[1] / 1.5)
 
         # Apply the calculated movement
-        self.rect.x += self.speed[0]
-        self.rect.y += self.speed[1]
+        self.rect.x = self.rect.x + self.speed[0]
+        self.rect.y = self.rect.y + self.speed[1]
 
+        # Place colliders in the proper place on player after they move
+        self._moveColliders()
+
+        # derive attack direction, could be done better with another function to use mouse or something
         if self.speed[0] or self.speed[1] != 0:
             self.attack_direction = [
                 round(cos(self.degrees * pi / 180) * self.attack_range),
                 round(sin(self.degrees * pi / 180) * self.attack_range)
             ]
-            # print("Attack Direction: ", self.attack_direction)
-
-        # Place colliders in the proper place on player after they move
-        self._moveColliders()
 
     def movementMOUSE(self):
         mouse_pos = pygame.mouse.get_pos()
@@ -220,14 +231,17 @@ class Player:
                     # self.speed[0] = 0
                     self._push(rect, (self.PUSH_DISTANCE, 0))
 
+    def _moveColliders(self):
+        self.collider_top_rect.midtop = self.rect.midtop
+        self.collider_bottom_rect.midbottom = self.rect.midbottom
+        self.collider_left_rect.midleft = self.rect.midleft
+        self.collider_right_rect.midright = self.rect.midright
+
     def _push(self, rect, push_coord):
-        rect.x += push_coord[0]
-        rect.y += push_coord[1]
-        # self.rect.x += push_coord[0]
-        # self.rect.y += push_coord[1]
+        rect.x = rect.x + push_coord[0]
+        rect.y = rect.y + push_coord[1]
 
         self._moveColliders()
-        #something is messed up here
 
     def punch(self, configBufferList):
         x_surf = pygame.Surface((self.attack_range, self.attack_thickness))
@@ -235,22 +249,10 @@ class Player:
 
         configBufferList.append(bufferables.animation([x_rect.centerx, x_rect.centery], self.attack_direction, "punch"))
 
-
     def laser(self, configBufferList):
         x_surf = pygame.Surface((self.attack_range, self.attack_thickness))
         x_rect = x_surf.get_rect(center=[self.rect.centerx - self.attack_direction[1], self.rect.centery - self.attack_direction[0]])
 
         configBufferList.append(bufferables.animation([x_rect.centerx, x_rect.centery], self.attack_direction, "laser"))
-
-
-    def _moveColliders(self):
-        self.collider_top_rect.midtop = self.rect.midtop
-        self.collider_bottom_rect.midbottom = self.rect.midbottom
-        self.collider_left_rect.midleft = self.rect.midleft
-        self.collider_right_rect.midright = self.rect.midright
-
-
-
-
 
 print('Character_2D Complete')
