@@ -21,6 +21,7 @@ import bufferables
 import pygame
 import Character_2D
 import Boxes_2D
+import Walls
 
 colors = [
     '#5e6f5d', '#42686c',
@@ -49,17 +50,22 @@ class PGConfig:
         # Window Name
         pygame.display.set_caption("Legend Of Teagan")
 
+        # Alternate loading state
+        self.setUp = True
+
         # Surface object window is centered on
         self.__screen = pygame.display.set_mode(self.__screenxy) #, pygame.FULLSCREEN)
         self.__screen_rect = self.__screen.get_rect()
 
         self.__font = pygame.font.Font(None, 32)
 
-        self.__player = Character_2D.Player((110, 110))  # , 'teek')  # plan to add variants that can be accessed here,
+        self.__player = Character_2D.Player((100, 100))  # , 'teek')  # plan to add variants that can be accessed here,
         # alternate models or behavior
         self.__player2 = Character_2D.Player((40, 40))
 
         self.__Boxes_2D_box_list = []
+
+        self.__Wall_list = []
 
         self.spawnCounter = 1000
 
@@ -75,19 +81,37 @@ class PGConfig:
         # loop
 
     def main(self):
+        if self.setUp:
+            ## only calls this stem once when triggered. Contents to vary, perhaps this is a standard
+            self.setUp = False
+
+            self.__Wall_list.append(Walls.Wall((80, 640), (0, 360), 3)) #LEFT
+            self.__Wall_list.append(Walls.Wall((80, 640), (1280, 360), 3)) #RIGHT
+            self.__Wall_list.append(Walls.Wall((1200, 80), (640, 0), 3)) #TOP
+            self.__Wall_list.append(Walls.Wall((1200, 80), (640, 720), 3)) #BOTTOM
+
+            self.__Wall_list.append(Walls.Wall((150, 50), (350, 350), 3))
+            self.__Wall_list.append(Walls.Wall((150, 50), (350, 200), 3))
+            self.__Wall_list.append(Walls.Wall((50, 150), (275, 275), 3))
+
+
+        print('Frame Start')
         # Render background, wipes screen clean each frame
         pygame.draw.rect(self.__screen, 'DarkBlue', (0, 0, self.__screen_rect.width, self.__screen_rect.height))
 
         ## debug text on screen
-        self.Box_count_text = self.__font.render(f'Boxes: {len(self.__Boxes_2D_box_list)}', False, colors[6])
-        self.__screen.blit(self.Box_count_text, self.Box_count_rect)
+        # self.Box_count_text = self.__font.render(f'Boxes: {len(self.__Boxes_2D_box_list)}', False, colors[6])
+        # self.__screen.blit(self.Box_count_text, self.Box_count_rect)
         ##
 
         # bufferables loop
         for bufferObject in self.bufferlist:
-            bufferedSurfRect = bufferObject.cycle(self.__screen)
+            bufferObject.cycle(self.__screen)
             for box in self.__Boxes_2D_box_list:
-                if box.rect.colliderect(bufferedSurfRect[1]):
+                # print(f'{bufferObject.get_cloneSurfRect()[1]}')
+                if box.rect.colliderect(bufferObject.surfRect[1]):
+                    if bufferObject.get_type() == 'laser':
+                        bufferObject.DeleteFlag = True
                     if bufferObject.Damaging:
                         box.setDeleteFlag(True)
 
@@ -96,17 +120,33 @@ class PGConfig:
                 del bufferObject
 
         ## character 2D things
-
+        # / for i in range(4) things. (divide frames by 4 to allow step-wise calculation. This enhances collision de-
+        # tection by allowing the objects to move smaller steps to their destination on the next frame.
+        self.__player.cycle()
         for i in range(4):
             # calculate movement, choose the control scheme ( there is 'WASD', and 'ARROW' )
             self.__player.movement('WASD')
 
             # collision with box_2D obect detection
             for box in self.__Boxes_2D_box_list:
-                if box.rect.colliderect(self.__player.rect):
-                    x = box.rect
-                    self.__player.collision(x)
-                    Break_case_collision = True
+                if box.rect.colliderect(self.__player.collider_zone_rect):
+                    self.__player.collision(box, self.__Boxes_2D_box_list)
+                # if box collides with the player's zone rect? I'm trying something out here
+                #     for otherBox in self.__Boxes_2D_box_list:
+                #         if box.rect.colliderect(otherBox.collider_zone_rect):
+                #             box.collision(otherBox, self.__Boxes_2D_box_list)
+                    # Break_case_collision = True
+            # self.__player.movement('WASD')
+            for wall in self.__Wall_list:
+                self.__screen.blit(wall.surf, wall.rect)
+                if wall.rect.colliderect(self.__player.collider_zone_rect):
+                    self.__player.collision(wall, self.__Wall_list)
+                for box in self.__Boxes_2D_box_list:
+                    if box.rect.colliderect(wall.rect):
+                        box.collision(wall, self.__Wall_list)
+
+
+
 
                     # show character
         self.__screen.blit(self.__player.surf, self.__player.rect)
@@ -120,7 +160,7 @@ class PGConfig:
         for box in self.__Boxes_2D_box_list:
             ## box removal protocol
             if box.DeleteFlag:
-                ## randomly pick a death animation
+                ## randomly pick a death
                 # death_anim = []
                 # death_anim.append(bufferables.animation([box.rect.centerx, box.rect.centery], [0, 0], "quadDestruction", (box.surf, box.rect)))
                 # death_anim.append(bufferables.animation([box.rect.centerx, box.rect.centery], [0, 0], "cloneFall", (box.surf, box.rect)))
@@ -136,19 +176,15 @@ class PGConfig:
 
                 ## deletion of box, effects are now in the buffer list and object with colliders is gone.
                 self.__Boxes_2D_box_list.remove(box)
-                del box
                 # print(self.__Boxes_2D_box_list)
                 continue
-
-            for otherBox in self.__Boxes_2D_box_list:
-                box.collision(otherBox.rect)
 
         for box in self.__Boxes_2D_box_list:
             self.__screen.blit(box.surf, box.rect)
 
             # debug 3 lines visualize box colliders
-            for collider_rect in box.COLLIDER_RECT_LIST:
-                collider_surf = pygame.Surface((collider_rect.w, collider_rect.h))
+            # for collider_rect in box.COLLIDER_RECT_LIST:
+            #     collider_surf = pygame.Surface((collider_rect.w, collider_rect.h))
                 # self.__screen.blit(collider_surf, collider_rect)
 
         # Logic
@@ -185,13 +221,13 @@ class PGConfig:
 
         ## spawn boxes by holding key
         if keys[pygame.K_t]:
-            for i in range(2):
+            for i in range(20):
                 collision = False
                 # Bx = Box width
                 # By = Box height
                 # Bav is the average of Bx and By
-                Bx = random.randint(90, 90)
-                By = random.randint(90, 90)
+                Bx = random.randint(20, 21)
+                By = random.randint(20, 21)
                 Bav = (Bx + By) / 2
 
                 testBox = Boxes_2D.Box((Bx, By),
@@ -204,6 +240,9 @@ class PGConfig:
                         collision = True
                 if testBox.rect.colliderect(self.__player.rect):
                     collision = True
+                for wall in self.__Wall_list:
+                    if testBox.rect.colliderect(wall.rect):
+                        collision = True
 
                 if not collision:
                     self.__Boxes_2D_box_list.append(testBox)
@@ -222,21 +261,22 @@ class PGConfig:
                 if event.key == pygame.K_SPACE:
                     self.__player.punch(self.bufferlist)
 
-                if event.key == pygame.K_q:
-                    print(gc.DEBUG_UNCOLLECTABLE)
-                if event.key == pygame.K_x:
-                    gc.collect()
+                # if event.key == pygame.K_q:
+                #     print(gc.DEBUG_UNCOLLECTABLE)
+                # if event.key == pygame.K_x:
+                #     gc.collect()
 
                 ## spawn boxes with each key press
                 if event.key == pygame.K_e:
-
-                    for i in range(20):
+                    for i in range(1):
                         collision = False
-                        # Bx = Box width
-                        # By = Box height
-                        # Bav is the average of Bx and By
-                        Bx = random.randint(2, 200)
-                        By = random.randint(2, 200)
+                        ## Bx = Box width
+                        ## By = Box height
+                        ## Bav is the average of Bx and By
+                        # Bx = random.randint(2, 200)
+                        # By = random.randint(2, 200)
+                        Bx = 10
+                        By = 400
                         Bav = (Bx + By) / 2
 
                         testBox = Boxes_2D.Box((Bx, By),
@@ -256,7 +296,7 @@ class PGConfig:
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 print(pygame.mouse.get_pos())
-                self.__Boxes_2D_box_list.append(Boxes_2D.Box((50, 50), pygame.mouse.get_pos(), random.choice(colors)))
+                self.__Boxes_2D_box_list.append(Boxes_2D.Box((80, 80), pygame.mouse.get_pos(), random.choice(colors)))
 
         pygame.display.update()
         self.__clock.tick(self.__framerate)

@@ -15,11 +15,15 @@ class Player:
         self.SPEED_INCREASE_RATE = 2
         self.SPEED_DECREASE_RATE = 1
         self.SPEED_CAP = 4
-        self.PUSH_DISTANCE = 5
+        self.PUSH_DISTANCE = 3
         self.EFFECTIVE_MAX_SPEED = self.SPEED_CAP - self.SPEED_DECREASE_RATE
 
         self.attack_range = round(self.__size[0] * .8)
         self.attack_thickness = round(self.__size[0] * .8)
+
+
+        self.laser_cooldown_default = 12
+        self.laser_cooldown = 0
 
         # Dynamic variables
         self.speed = [0, 0]
@@ -32,7 +36,7 @@ class Player:
 
         # player outline object, edges define where the collider objects will go
 
-        self.png = pygame.image.load('graphics/Teak/Push_1.png').convert_alpha()
+        self.png = pygame.image.load('venv/graphics/Teak/Push_1.png').convert_alpha()
         # self.png = pygame.image.load('graphics/Legacygraphics/custom/shell2.png').convert_alpha()
         # self.png = pygame.image.load('graphics/Helicopter/Helicopter.gif').convert_alpha()
 
@@ -48,6 +52,8 @@ class Player:
         collider_longy = self.__size[1] * .9
         collider_shorty = self.__size[1] * .1
 
+        collider_zone = (self.__size[0]*2, self.__size[1]*2)
+
         # Create collider objects
         self.collider_top_surf = pygame.Surface((collider_longx, collider_shortx))
         self.collider_top_rect = self.collider_top_surf.get_rect(midtop=self.rect.midtop)
@@ -60,6 +66,9 @@ class Player:
 
         self.collider_right_surf = pygame.Surface((collider_shorty, collider_longy))
         self.collider_right_rect = self.collider_right_surf.get_rect(midright=self.rect.midright)
+
+        self.collider_zone_surf = pygame.Surface((collider_zone))
+        self.collider_zone_rect = self.collider_zone_surf.get_rect(center=self.rect.center)
 
         # add colliders' rects to collider_rect_list
         self.COLLIDER_RECT_LIST.append(self.collider_top_rect)
@@ -77,6 +86,7 @@ class Player:
             down = keys[pygame.K_s]
             left = keys[pygame.K_a]
             right = keys[pygame.K_d]
+            del keys
 
         # or use arrow keys
         elif controls == 'ARROW':
@@ -84,6 +94,7 @@ class Player:
             down = keys[pygame.K_DOWN]
             left = keys[pygame.K_LEFT]
             right = keys[pygame.K_RIGHT]
+            del keys
 
         # otherwise no input detection
         else:
@@ -91,6 +102,7 @@ class Player:
             down = False
             left = False
             right = False
+            del keys
 
         # Left movement
         if left:
@@ -200,59 +212,86 @@ class Player:
 
         self._moveColliders()
 
-    def collision(self, rect):
+    def collision(self, box, box_list):
             # Top collision
-            if self.collider_top_rect.bottom + 10 > rect.bottom:
-                if self.collider_top_rect.colliderect(rect):
-                    self.rect.top = rect.bottom
+            if self.collider_top_rect.bottom + 10 > box.rect.bottom:
+                if self.collider_top_rect.colliderect(box.rect):
+                    self.rect.top = box.rect.bottom
                     # self.speed[1] = 0
-                    self._push(rect, (0, -self.PUSH_DISTANCE))
+                    if box.type == 'box':
+                        self._push(box, (0, -self.PUSH_DISTANCE),box_list)
 
             # Bottom collision
-            if self.collider_bottom_rect.top - 10 < rect.top:
-                if self.collider_bottom_rect.colliderect(rect):
-                    self.rect.bottom = rect.top
+            if self.collider_bottom_rect.top - 10 < box.rect.top:
+                if self.collider_bottom_rect.colliderect(box.rect):
+                    self.rect.bottom = box.rect.top
                     # self.speed[1] = 0
-                    self._push(rect, (0, self.PUSH_DISTANCE))
+                    if box.type == 'box':
+                        self._push(box, (0, self.PUSH_DISTANCE),box_list)
 
 
             # Left collision
-            if self.collider_left_rect.right + 10 > rect.right:
-                if self.collider_left_rect.colliderect(rect):
-                    self.rect.left = rect.right
+            if self.collider_left_rect.right + 10 > box.rect.right:
+                if self.collider_left_rect.colliderect(box.rect):
+                    self.rect.left = box.rect.right
+                    if box.type == 'box':
                     # self.speed[0] = 0
-                    self._push(rect, (-self.PUSH_DISTANCE, 0))
+                        self._push(box, (-self.PUSH_DISTANCE, 0),box_list)
 
 
             # Right collision
-            if self.collider_right_rect.left - 10 < rect.left:
-                if self.collider_right_rect.colliderect(rect):
-                    self.rect.right = rect.left
+            if self.collider_right_rect.left - 10 < box.rect.left:
+                if self.collider_right_rect.colliderect(box.rect):
+                    self.rect.right = box.rect.left
                     # self.speed[0] = 0
-                    self._push(rect, (self.PUSH_DISTANCE, 0))
+                    if box.type == 'box':
+                        self._push(box, (self.PUSH_DISTANCE, 0),box_list)
 
     def _moveColliders(self):
         self.collider_top_rect.midtop = self.rect.midtop
         self.collider_bottom_rect.midbottom = self.rect.midbottom
         self.collider_left_rect.midleft = self.rect.midleft
         self.collider_right_rect.midright = self.rect.midright
+        self.collider_zone_rect.center = self.rect.center
 
-    def _push(self, rect, push_coord):
-        rect.x = rect.x + push_coord[0]
-        rect.y = rect.y + push_coord[1]
+    def _push(self, box, push_coord, box_list):
+        box.rect.x = box.rect.x + push_coord[0]
+        box.rect.y = box.rect.y + push_coord[1]
 
-        self._moveColliders()
+        if box_list[0].type == 'wall':
+            pass
+        else:
+            for i in box_list:
+                if box.rect.colliderect(i.collider_zone_rect):
+                    if box.rect.center == i.rect.center:
+                        # print('I I I'
+                        pass
+                    else:
+                        # print('yeb')
+                        box.collision(i, box_list)
+                        box._moveColliders()
+
 
     def punch(self, configBufferList):
         x_surf = pygame.Surface((self.attack_range, self.attack_thickness))
         x_rect = x_surf.get_rect(center=[self.rect.centerx - self.attack_direction[1], self.rect.centery - self.attack_direction[0]])
 
-        configBufferList.append(bufferables.animation([x_rect.centerx, x_rect.centery], self.attack_direction, "punch"))
+        configBufferList.append(bufferables.animation([x_rect.centerx, x_rect.centery], self.attack_direction, "punch", (x_surf, x_rect)))
 
     def laser(self, configBufferList):
-        x_surf = pygame.Surface((self.attack_range, self.attack_thickness))
-        x_rect = x_surf.get_rect(center=[self.rect.centerx - self.attack_direction[1], self.rect.centery - self.attack_direction[0]])
+        if self.laser_cooldown == 0:
 
-        configBufferList.append(bufferables.animation([x_rect.centerx, x_rect.centery], self.attack_direction, "laser"))
+            x_surf = pygame.Surface((self.attack_range, self.attack_thickness))
+            x_rect = x_surf.get_rect(center=[self.rect.centerx - self.attack_direction[1], self.rect.centery - self.attack_direction[0]])
+
+            configBufferList.append(bufferables.animation([x_rect.centerx, x_rect.centery], self.attack_direction, "laser", (x_surf, x_rect)))
+            self.laser_cooldown = self.laser_cooldown_default
+
+
+
+    def cycle(self):
+        if self.laser_cooldown > 0:
+            self.laser_cooldown = self.laser_cooldown - 1
+
 
 print('Character_2D Complete')
